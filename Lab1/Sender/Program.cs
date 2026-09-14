@@ -2,7 +2,7 @@
 using System.Text;
 using System.Text.Json;
 
-// Adresa și portul Brokerului
+// Adresa si portul Brokerului
 const string brokerIp = "127.0.0.1";
 const int brokerPort = 6000;
 
@@ -25,7 +25,7 @@ while (true)
     Console.Write("Topic: ");
     string topic = Console.ReadLine() ?? "";
 
-    // Enter fără topic = ieșire din program
+    // Enter fara topic = iesire din program
     if (string.IsNullOrWhiteSpace(topic))
     {
         break;
@@ -66,7 +66,7 @@ while (true)
 
     try
     {
-        // Creăm și deschidem conexiunea TCP
+        // Cream si deschidem conexiunea TCP
         using TcpClient client = new TcpClient();
 
         await client.ConnectAsync(brokerIp, brokerPort);
@@ -77,9 +77,9 @@ while (true)
         // Transformăm JSON-ul în bytes
         byte[] data = Encoding.UTF8.GetBytes(json);
 
-        // Trimitem mesajul către Broker
+        // Trimitem mesajul catre Broker
         await stream.WriteAsync(data);
-
+        client.Client.Shutdown(SocketShutdown.Send); // semnalizează Brokerului că am terminat de trimis
         Console.WriteLine("Message sent to Broker.");
         Console.WriteLine();
     }
