@@ -1,0 +1,16 @@
+[
+  {
+    "Id": "61df9ed7-0bf9-4705-8458-f22fdc92bcd2",
+    "PublisherId": "P1",
+    "Topic": "stiri",
+    "Content": "test1",
+    "Timestamp": "2026-09-22T15:34:44.6493174+03:00"
+  },
+  {
+    "Id": "21585dde-3f30-4ffd-8129-b16929f5a445",
+    "PublisherId": "P1",
+    "Topic": "stiri",
+    "Content": "test istoric",
+    "Timestamp": "2026-09-22T15:36:16.8211606+03:00"
+  }
+]

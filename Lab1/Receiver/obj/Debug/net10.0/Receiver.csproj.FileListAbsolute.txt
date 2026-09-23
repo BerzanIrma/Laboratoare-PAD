@@ -1,0 +1,15 @@
+C:\Users\ADMIN\Laboratoare-PAD\Lab1\Receiver\bin\Debug\net10.0\Receiver.exe
+C:\Users\ADMIN\Laboratoare-PAD\Lab1\Receiver\bin\Debug\net10.0\Receiver.deps.json
+C:\Users\ADMIN\Laboratoare-PAD\Lab1\Receiver\bin\Debug\net10.0\Receiver.runtimeconfig.json
+C:\Users\ADMIN\Laboratoare-PAD\Lab1\Receiver\bin\Debug\net10.0\Receiver.dll
+C:\Users\ADMIN\Laboratoare-PAD\Lab1\Receiver\bin\Debug\net10.0\Receiver.pdb
+C:\Users\ADMIN\Laboratoare-PAD\Lab1\Receiver\obj\Debug\net10.0\Receiver.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ADMIN\Laboratoare-PAD\Lab1\Receiver\obj\Debug\net10.0\Receiver.AssemblyInfoInputs.cache
+C:\Users\ADMIN\Laboratoare-PAD\Lab1\Receiver\obj\Debug\net10.0\Receiver.AssemblyInfo.cs
+C:\Users\ADMIN\Laboratoare-PAD\Lab1\Receiver\obj\Debug\net10.0\Receiver.csproj.CoreCompileInputs.cache
+C:\Users\ADMIN\Laboratoare-PAD\Lab1\Receiver\obj\Debug\net10.0\Receiver.sourcelink.json
+C:\Users\ADMIN\Laboratoare-PAD\Lab1\Receiver\obj\Debug\net10.0\Receiver.dll
+C:\Users\ADMIN\Laboratoare-PAD\Lab1\Receiver\obj\Debug\net10.0\refint\Receiver.dll
+C:\Users\ADMIN\Laboratoare-PAD\Lab1\Receiver\obj\Debug\net10.0\Receiver.pdb
+C:\Users\ADMIN\Laboratoare-PAD\Lab1\Receiver\obj\Debug\net10.0\Receiver.genruntimeconfig.cache
+C:\Users\ADMIN\Laboratoare-PAD\Lab1\Receiver\obj\Debug\net10.0\ref\Receiver.dll

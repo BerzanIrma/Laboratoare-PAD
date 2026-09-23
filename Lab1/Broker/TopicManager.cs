@@ -77,4 +77,13 @@ public class TopicManager
                 _history[topic] = new List<Message>(messages);
         }
     }
+
+public List<string> GetTopics()
+{
+    lock (_lock)
+    {
+        return _history.Keys.Union(_subscribers.Keys).Distinct().ToList();
+    }
+}
+
 }

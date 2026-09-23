@@ -13,60 +13,66 @@ public class ClientHandler
         _topicManager = topicManager;
     }
 
-    public async Task HandleAsync()
+public async Task HandleAsync()
+{
+    string? subscribedTopic = null;
+    StreamWriter? writer = null;
+
+    try
     {
-        string? subscribedTopic = null;
-        StreamWriter? writer = null;
+        using var stream = _client.GetStream();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
 
-        try
+        string? line;
+        while ((line = await reader.ReadLineAsync()) != null)
         {
-            using var stream = _client.GetStream();
-            using var reader = new StreamReader(stream, Encoding.UTF8);
-            writer = new StreamWriter(stream, Encoding.UTF8) { AutoFlush = true };
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
 
-            string? line;
-            while ((line = await reader.ReadLineAsync()) != null)
+            try
             {
-                if (string.IsNullOrWhiteSpace(line))
-                    continue;
+                using var doc = JsonDocument.Parse(line);
+                var root = doc.RootElement;
 
-                try
+                if (root.TryGetProperty("Command", out var commandProp) && commandProp.GetString() == "ListTopics")
                 {
-                    using var doc = JsonDocument.Parse(line);
-                    var root = doc.RootElement;
-
-                    if (root.TryGetProperty("Content", out _))
-                    {
-                        // e un mesaj publicat (are campul Content -> vine de la Sender)
-                        var msg = JsonSerializer.Deserialize<Message>(line);
-                        if (msg != null)
-                            _topicManager.Publish(msg);
-                    }
-                    else if (root.TryGetProperty("Topic", out var topicProp))
-                    {
-                        // e o cerere de subscribe (doar campul Topic)
-                        subscribedTopic = topicProp.GetString();
-                        if (subscribedTopic != null)
-                            _topicManager.Subscribe(subscribedTopic, writer);
-                    }
+                    var topics = _topicManager.GetTopics();
+                    string json = JsonSerializer.Serialize(topics);
+                    await writer.WriteLineAsync(json);
                 }
-                catch (JsonException ex)
+                else if (root.TryGetProperty("Content", out _))
                 {
-                    // JSON invalid -> il ignoram, brokerul continua sa functioneze
-                    Console.WriteLine($"Invalid JSON received, ignored: {ex.Message}");
+                    // e un mesaj publicat (are campul Content -> vine de la Sender)
+                    var msg = JsonSerializer.Deserialize<Message>(line);
+                    if (msg != null)
+                        _topicManager.Publish(msg);
+                }
+                else if (root.TryGetProperty("Topic", out var topicProp))
+                {
+                    // e o cerere de subscribe (doar campul Topic)
+                    subscribedTopic = topicProp.GetString();
+                    if (subscribedTopic != null)
+                        _topicManager.Subscribe(subscribedTopic, writer);
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Connection error: {ex.Message}");
-        }
-        finally
-        {
-            if (subscribedTopic != null && writer != null)
-                _topicManager.Unsubscribe(subscribedTopic, writer);
-
-            _client.Close();
+            catch (JsonException ex)
+            {
+                // JSON invalid -> il ignoram, brokerul continua sa functioneze
+                Console.WriteLine($"Invalid JSON received, ignored: {ex.Message}");
+            }
         }
     }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Connection error: {ex.Message}");
+    }
+    finally
+    {
+        if (subscribedTopic != null && writer != null)
+            _topicManager.Unsubscribe(subscribedTopic, writer);
+
+        _client.Close();
+    }
+}
 }
