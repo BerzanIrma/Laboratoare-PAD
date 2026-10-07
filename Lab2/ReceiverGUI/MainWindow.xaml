@@ -1,0 +1,137 @@
+﻿<Window x:Class="ReceiverGUI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Receiver (gRPC)" Height="550" Width="750"
+        Background="#F5F5F7"
+        FontFamily="Segoe UI">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="#0078D4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="14,6"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="6"/>
+            <Setter Property="BorderBrush" Value="#CCCCCC"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style TargetType="TabItem">
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <!-- butonul X mic de pe fiecare tab -->
+        <Style x:Key="CloseTabButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="Gray"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" Padding="4,0">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- sus: abonare la un topic nou -->
+        <Border Grid.Row="0" Background="White" CornerRadius="6" Padding="12" Margin="0,0,0,8">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Topic nou:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,10,0"/>
+                <TextBox Width="220" VerticalContentAlignment="Center"
+                         Text="{Binding NewTopicInput, UpdateSourceTrigger=PropertyChanged}">
+                    <TextBox.InputBindings>
+                        <KeyBinding Key="Enter" Command="{Binding SubscribeCommand}"/>
+                    </TextBox.InputBindings>
+                </TextBox>
+                <Button Content="Subscribe" Command="{Binding SubscribeCommand}" Margin="10,0,0,0"/>
+                <TextBlock Text="{Binding Status}" Foreground="#C42B1C" VerticalAlignment="Center" Margin="12,0,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- jos: cate un tab pentru fiecare topic -->
+        <Border Grid.Row="1" Background="White" CornerRadius="6" Padding="8">
+            <TabControl ItemsSource="{Binding Subscriptions}"
+                        SelectedItem="{Binding SelectedSubscription}"
+                        Background="Transparent" BorderThickness="0">
+
+                <!-- capul tab-ului: topic (numar mesaje) X -->
+                <TabControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Topic}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Messages.Count, StringFormat=' ({0})'}"
+                                       Foreground="Gray" FontWeight="Normal" VerticalAlignment="Center"/>
+                            <Button Content="✕" Style="{StaticResource CloseTabButton}" Margin="6,0,0,0"
+                                    ToolTip="Dezabonare"
+                                    Command="{Binding DataContext.UnsubscribeCommand,
+                                              RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </TabControl.ItemTemplate>
+
+                <!-- continutul tab-ului: lista de mesaje + starea conexiunii -->
+                <TabControl.ContentTemplate>
+                    <DataTemplate>
+                        <Grid Margin="8">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <ListView Grid.Row="0" ItemsSource="{Binding Messages}" BorderThickness="0">
+                                <ListView.View>
+                                    <GridView>
+                                        <GridViewColumn Header="Ora" DisplayMemberBinding="{Binding Timestamp, StringFormat=HH:mm:ss}" Width="90"/>
+                                        <GridViewColumn Header="Publisher" DisplayMemberBinding="{Binding PublisherId}" Width="100"/>
+                                        <GridViewColumn Header="Mesaj" DisplayMemberBinding="{Binding Content}" Width="450"/>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+
+                            <Border Grid.Row="1" Background="#F0F0F0" CornerRadius="4" Padding="8,4"
+                                    Margin="0,8,0,0" HorizontalAlignment="Left">
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Width="8" Height="8" Margin="0,0,6,0" VerticalAlignment="Center">
+                                        <Ellipse.Style>
+                                            <Style TargetType="Ellipse">
+                                                <Setter Property="Fill" Value="Gray"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                                        <Setter Property="Fill" Value="Green"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Ellipse.Style>
+                                    </Ellipse>
+                                    <TextBlock Text="{Binding Status}" FontSize="12"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </DataTemplate>
+                </TabControl.ContentTemplate>
+            </TabControl>
+        </Border>
+    </Grid>
+</Window>

@@ -7,12 +7,14 @@ public class BrokerService : MessageService.MessageServiceBase
 {
     private readonly TopicManager _topicManager;
     private readonly DeadLetterQueue _deadLetters;
+    private readonly IHostApplicationLifetime _lifetime;
 
     // le primim din Program.cs (dependency injection)
-    public BrokerService(TopicManager topicManager, DeadLetterQueue deadLetters)
+    public BrokerService(TopicManager topicManager, DeadLetterQueue deadLetters, IHostApplicationLifetime lifetime)
     {
         _topicManager = topicManager;
         _deadLetters = deadLetters;
+        _lifetime = lifetime;
     }
 
     // Sender -> Broker
@@ -55,9 +57,16 @@ public class BrokerService : MessageService.MessageServiceBase
 
         var subscription = _topicManager.Subscribe(request.Topic.Trim());
 
+        // stream-ul se opreste daca pleaca Receiver-ul SAU daca se opreste Broker-ul
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(
+            context.CancellationToken, _lifetime.ApplicationStopping);
+
         try
         {
-            await foreach (var msg in subscription.Reader.ReadAllAsync(context.CancellationToken))
+            // confirmam imediat Receiver-ului ca abonarea a reusit
+            await context.WriteResponseHeadersAsync(new Metadata());
+
+            await foreach (var msg in subscription.Reader.ReadAllAsync(stop.Token))
             {
                 try
                 {
@@ -73,10 +82,16 @@ public class BrokerService : MessageService.MessageServiceBase
         }
         catch (OperationCanceledException)
         {
-            // Receiver-ul a inchis conexiunea
+            // Receiver-ul a inchis conexiunea sau Broker-ul se opreste
+        }
+        catch (Exception ex)
+        {
+            // orice alta eroare pe stream: o afisam, broker-ul nu cade
+            Console.WriteLine($"Eroare pe stream-ul topicului '{subscription.Topic}': {ex.Message}");
         }
         finally
         {
+            // se executa mereu: scoatem Receiver-ul din lista
             _topicManager.Unsubscribe(subscription);
         }
     }

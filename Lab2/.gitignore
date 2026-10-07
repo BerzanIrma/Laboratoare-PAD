@@ -2,3 +2,5 @@ bin/
 obj/
 .vs/
 *.user
+receiver_backup.xml
+broker_backup.xml
