@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "Broker";
+
+package message;
+
+service MessageService {
+  // Sender -> Broker
+  rpc SendMessage (MessageRequest) returns (MessageResponse);
+  // Broker -> Receiver: istoricul topicului, apoi mesajele noi
+  rpc ReceiveMessages (TopicRequest) returns (stream MessageRequest);
+}
+
+message MessageRequest {
+  string id = 1;
+  string publisher_id = 2;
+  string topic = 3;
+  string content = 4;
+  google.protobuf.Timestamp timestamp = 5;
+}
+
+message MessageResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message TopicRequest {
+  string topic = 1;
+}
