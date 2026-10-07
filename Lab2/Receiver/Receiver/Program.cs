@@ -48,7 +48,7 @@ class Program
                     var msg = call.ResponseStream.Current;
 
                     Console.WriteLine(
-                        $"[{msg.Timestamp.ToDateTime():HH:mm:ss}] " +
+                       $"[{msg.Timestamp.ToDateTime().ToLocalTime():HH:mm:ss}] " +
                         $"[{msg.Topic}] " +
                         $"{msg.PublisherId}: " +
                         $"{msg.Content}");

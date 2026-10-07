@@ -1,10 +1,13 @@
 using System.Text.Json;
 using System.IO;
 
+// Salveaza pe disc (receiver_backup.json) toate mesajele primite de Receiver
+// si le incarca la pornire. Diferit de PersistenceManager-ul din Broker:
+// aici se salveaza imediat la fiecare mesaj, nu la 30 de secunde.
 public class PersistenceManager
 {
     private readonly string _filePath;
-    private readonly object _lock = new();
+    private readonly object _lock = new(); // taburile pot salva simultan -> un singur scris pe rand
 
     public PersistenceManager(string filePath = "receiver_backup.json")
     {
@@ -31,6 +34,7 @@ public class PersistenceManager
         }
     }
 
+    // rescrie tot fisierul cu lista completa de mesaje
     public void Save(List<Message> messages)
     {
         lock (_lock)

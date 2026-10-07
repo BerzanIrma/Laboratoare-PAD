@@ -6,7 +6,9 @@ namespace Sender
     {
         public MainWindow()
         {
-            InitializeComponent();
+            InitializeComponent(); // construieste controalele descrise in MainWindow.xaml
+
+            // DataContext = obiectul de care se leaga toate {Binding ...} din XAML
             DataContext = new MainViewModel();
         }
     }
