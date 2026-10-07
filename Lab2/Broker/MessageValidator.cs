@@ -2,6 +2,15 @@ using System.Text.RegularExpressions;
 
 namespace Broker;
 
+// ======================================================================================
+//  MessageValidator - verifica datele inainte ca Broker-ul sa le foloseasca
+// ======================================================================================
+//  Folosit de BrokerService:
+//    - ValidateMessage -> la PASUL 5.1 (SendMessage)
+//    - ValidateTopic   -> la PASUL 3.1 (ReceiveMessages)
+//  Clientii pot trimite orice, asa ca Broker-ul nu are incredere in ei si verifica tot.
+// ======================================================================================
+
 // Verifica datele care vin de la clienti.
 // Returneaza mesajul de eroare sau null daca totul e ok.
 public static class MessageValidator
@@ -13,6 +22,7 @@ public static class MessageValidator
     // topicul poate avea doar litere, cifre, '-', '_' si '.', fara spatii
     private static readonly Regex TopicRegex = new(@"^[A-Za-z0-9_.\-]+$");
 
+    // Verificarea topicului (folosita si de ValidateMessage, mai jos)
     public static string? ValidateTopic(string? topic)
     {
         topic = topic?.Trim();
@@ -27,6 +37,8 @@ public static class MessageValidator
         return null;
     }
 
+    // Verificarea unui mesaj complet, in ordine: cerere -> publisher -> topic -> continut.
+    // Se opreste la prima eroare gasita; textul ei ajunge in SenderGUI (campul Status).
     public static string? ValidateMessage(MessageRequest? request)
     {
         if (request == null)

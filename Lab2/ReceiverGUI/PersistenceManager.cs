@@ -3,6 +3,18 @@ using System.Xml.Serialization;
 
 namespace ReceiverGUI;
 
+// ======================================================================================
+//  PersistenceManager (ReceiverGUI) - arhiva locala a mesajelor primite
+// ======================================================================================
+//  Fisier: receiver_backup.xml (langa ReceiverGUI.exe)
+//    Load -> la pornire, din constructorul MainViewModel
+//    Save -> la fiecare mesaj nou, din MainViewModel.SaveMessage (PASUL 6)
+//  Asa, dupa redeschiderea aplicatiei, tab-urile arata imediat mesajele vechi,
+//  chiar daca Broker-ul nu este pornit.
+//
+//  Atentie: e alt fisier decat broker_backup.xml. Broker-ul si Receiver-ul isi salveaza datele separat.
+// ======================================================================================
+
 // Salveaza mesajele primite intr-un fisier XML si le incarca la pornire
 public class PersistenceManager
 {
@@ -17,10 +29,11 @@ public class PersistenceManager
         _filePath = filePath;
     }
 
+    // la pornire: fisier -> lista de mesaje
     public List<ReceivedMessage> Load()
     {
         if (!File.Exists(_filePath))
-            return new List<ReceivedMessage>();
+            return new List<ReceivedMessage>();   // prima pornire, nu exista inca fisier
 
         try
         {
@@ -34,6 +47,7 @@ public class PersistenceManager
         }
     }
 
+    // la fiecare mesaj nou: lista de mesaje -> fisier
     public void Save(List<ReceivedMessage> messages)
     {
         try
@@ -44,6 +58,7 @@ public class PersistenceManager
             {
                 _serializer.Serialize(stream, messages);
             }
+            // abia acum inlocuim fisierul vechi
             File.Move(tempPath, _filePath, overwrite: true);
         }
         catch (Exception)

@@ -4,6 +4,14 @@
         Title="Receiver (gRPC)" Height="550" Width="750"
         Background="#F5F5F7"
         FontFamily="Segoe UI">
+    <!--
+        Fereastra ReceiverGUI: doar aspectul, fara logica.
+        DataContext-ul ferestrei este MainViewModel (setat in MainWindow.xaml.cs).
+        In interiorul fiecarui tab, DataContext-ul devine TopicSubscriptionViewModel-ul acelui tab,
+        deci {Binding Messages}, {Binding Status} etc. din tab se refera la tab, nu la fereastra.
+    -->
+
+    <!-- Stiluri comune: butoane, campuri de text, tab-uri si butonul X de inchidere -->
     <Window.Resources>
         <Style TargetType="Button">
             <Setter Property="Background" Value="#0078D4"/>
@@ -54,7 +62,9 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- sus: abonare la un topic nou -->
+        <!-- sus: abonare la un topic nou (PASUL 2)
+             TextBox -> MainViewModel.NewTopicInput; Subscribe sau Enter -> MainViewModel.SubscribeCommand -->
+
         <Border Grid.Row="0" Background="White" CornerRadius="6" Padding="12" Margin="0,0,0,8">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Topic nou:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,10,0"/>
@@ -69,13 +79,19 @@
             </StackPanel>
         </Border>
 
-        <!-- jos: cate un tab pentru fiecare topic -->
+        <!-- jos: cate un tab pentru fiecare topic
+             ItemsSource = MainViewModel.Subscriptions: cand Subscribe() adauga un element, apare un tab nou;
+             cand Unsubscribe() il scoate, tab-ul dispare -->
+
         <Border Grid.Row="1" Background="White" CornerRadius="6" Padding="8">
             <TabControl ItemsSource="{Binding Subscriptions}"
                         SelectedItem="{Binding SelectedSubscription}"
                         Background="Transparent" BorderThickness="0">
 
-                <!-- capul tab-ului: topic (numar mesaje) X -->
+                <!-- capul tab-ului: topic (numar mesaje) X
+                     Butonul X (PASUL 8): comanda e luata din fereastra (AncestorType=Window -> MainViewModel),
+                     iar CommandParameter="{Binding}" trimite tab-ul curent, ca sa stie pe care il inchide -->
+
                 <TabControl.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
@@ -91,7 +107,10 @@
                     </DataTemplate>
                 </TabControl.ItemTemplate>
 
-                <!-- continutul tab-ului: lista de mesaje + starea conexiunii -->
+                <!-- continutul tab-ului: lista de mesaje + starea conexiunii
+                     Messages = TopicSubscriptionViewModel.Messages (se umple la PASUL 6)
+                     Bulina: verde cand IsConnected = true, gri altfel; langa ea, Status -->
+
                 <TabControl.ContentTemplate>
                     <DataTemplate>
                         <Grid Margin="8">

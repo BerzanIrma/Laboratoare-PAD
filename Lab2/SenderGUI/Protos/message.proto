@@ -1,31 +1,53 @@
+// ======================================================================================
+//  CONTRACTUL gRPC dintre Broker, SenderGUI si ReceiverGUI
+// ======================================================================================
+//  Acest fisier descrie CE metode exista si CUM arata datele trimise prin retea.
+//  La compilare, Grpc.Tools genereaza automat clase C# din el:
+//    - in Broker:      MessageService.MessageServiceBase   (serverul, implementat in BrokerService.cs)
+//    - in SenderGUI:   MessageService.MessageServiceClient (clientul care trimite)
+//    - in ReceiverGUI: MessageService.MessageServiceClient (clientul care primeste)
+//  Toate 3 proiectele au o copie a acestui fisier. Singura diferenta este csharp_namespace.
+//  Daca schimbi ceva aici, schimba la fel si in celelalte doua copii.
+// ======================================================================================
+
 syntax = "proto3";
 
+// tipul Timestamp (data + ora, in UTC) vine dintr-o biblioteca standard Google
 import "google/protobuf/timestamp.proto";
 
+// in ce namespace C# se genereaza clasele (Broker / SenderGUI / ReceiverGUI)
 option csharp_namespace = "SenderGUI";
 
 package message;
 
 service MessageService {
-  // Sender -> Broker
+  // PASUL 4-5: Sender -> Broker
+  // Un apel simplu: Sender-ul trimite UN mesaj, Broker-ul raspunde O data (succes sau eroare).
   rpc SendMessage (MessageRequest) returns (MessageResponse);
-  // Broker -> Receiver: istoricul topicului, apoi mesajele noi
+
+  // PASUL 2-3 si 6: Broker -> Receiver
+  // Receiver-ul trimite topicul o singura data, apoi Broker-ul ii tot trimite mesaje
+  // pe aceeasi conexiune (stream): intai istoricul topicului, apoi mesajele noi, pe masura ce apar.
   rpc ReceiveMessages (TopicRequest) returns (stream MessageRequest);
 }
 
+// Un mesaj publicat. Aceeasi structura circula Sender -> Broker si Broker -> Receiver.
+// Numerele (= 1, = 2 ...) identifica campurile in formatul binar; nu se schimba odata folosite.
 message MessageRequest {
-  string id = 1;
-  string publisher_id = 2;
-  string topic = 3;
-  string content = 4;
-  google.protobuf.Timestamp timestamp = 5;
+  string id = 1;                              // identificator unic (Guid), folosit de Receiver ca sa nu afiseze de doua ori
+  string publisher_id = 2;                    // cine a trimis (ex: "P1234")
+  string topic = 3;                           // pe ce topic se publica
+  string content = 4;                         // textul mesajului
+  google.protobuf.Timestamp timestamp = 5;    // cand a fost trimis (UTC)
 }
 
+// Raspunsul Broker-ului catre Sender
 message MessageResponse {
-  bool success = 1;
-  string message = 2;
+  bool success = 1;     // true = mesaj acceptat, false = respins (ex: topic invalid)
+  string message = 2;   // explicatia, afisata in SenderGUI
 }
 
+// Cererea de abonare trimisa de Receiver
 message TopicRequest {
-  string topic = 1;
+  string topic = 1;     // topicul la care vrea sa se aboneze
 }

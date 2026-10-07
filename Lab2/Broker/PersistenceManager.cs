@@ -2,6 +2,24 @@ using System.Xml.Serialization;
 
 namespace Broker;
 
+// ======================================================================================
+//  PersistenceManager - Broker-ul nu isi pierde datele cand e oprit
+// ======================================================================================
+//  Fisier: broker_backup.xml (in folderul din care pornesti Broker-ul)
+//
+//    PASUL 1.6  la pornire  -> RestoreIfExists: XML -> TopicManager.LoadSnapshot + DeadLetterQueue.Load
+//    PASUL 7    la 10s      -> RunAsync -> SaveAsync: TopicManager.GetSnapshot + DeadLetterQueue.GetAll -> XML
+//    PASUL 9    la oprire   -> SaveAsync, o ultima data (apelat din Program.cs)
+//
+//  Structura fisierului:
+//    <BrokerBackup>
+//      <Topics>
+//        <Topic name="news"> <Messages> <Message>...</Message> </Messages> </Topic>
+//      </Topics>
+//      <DeadLetters> <DeadLetter>...</DeadLetter> </DeadLetters>
+//    </BrokerBackup>
+// ======================================================================================
+
 // Ce scriem in fisierul XML. Clasele trebuie sa fie public pentru XmlSerializer.
 [XmlRoot("BrokerBackup")]
 public class BrokerBackup
@@ -33,7 +51,7 @@ public class PersistenceManager
     private readonly DeadLetterQueue _deadLetters;
     private readonly string _filePath;
     private readonly TimeSpan _interval;
-    private readonly SemaphoreSlim _saveLock = new(1, 1);
+    private readonly SemaphoreSlim _saveLock = new(1, 1);   // o singura salvare odata (timer-ul si oprirea pot veni simultan)
     private readonly XmlSerializer _serializer = new(typeof(BrokerBackup));
 
     public PersistenceManager(TopicManager topicManager, DeadLetterQueue deadLetters,
@@ -45,7 +63,7 @@ public class PersistenceManager
         _interval = TimeSpan.FromSeconds(intervalSeconds);
     }
 
-    // la pornire
+    // ---------- PASUL 1.6: la pornire ----------
     public void RestoreIfExists()
     {
         if (!File.Exists(_filePath))
@@ -56,6 +74,7 @@ public class PersistenceManager
 
         try
         {
+            // a) citim fisierul XML -> obiect BrokerBackup
             BrokerBackup? backup;
             using (var stream = File.OpenRead(_filePath))
             {
@@ -64,9 +83,11 @@ public class PersistenceManager
             if (backup == null)
                 return;
 
-            // lista de topicuri din XML -> Dictionary pentru TopicManager
+            // b) lista de topicuri din XML -> Dictionary pentru TopicManager
             var history = backup.Topics.ToDictionary(t => t.Name, t => t.Messages);
             _topicManager.LoadSnapshot(history);
+
+            // c) mesajele nelivrate inapoi in DLQ
             _deadLetters.Load(backup.DeadLetters);
 
             Console.WriteLine($"Restaurat din backup: {history.Sum(t => t.Value.Count)} mesaje " +
@@ -74,16 +95,19 @@ public class PersistenceManager
         }
         catch (Exception ex)
         {
+            // fisier stricat -> broker-ul porneste totusi, cu istoricul gol
             Console.WriteLine($"Backup-ul nu a putut fi restaurat: {ex.Message}");
         }
     }
 
+    // ---------- PASUL 7: salvarea periodica ----------
     // ruleaza in fundal cat timp merge broker-ul
     public async Task RunAsync(CancellationToken token)
     {
         using var timer = new PeriodicTimer(_interval);
         try
         {
+            // asteapta 10s, salveaza, asteapta 10s, salveaza... pana la oprire
             while (await timer.WaitForNextTickAsync(token))
                 await SaveAsync();
         }
@@ -93,12 +117,13 @@ public class PersistenceManager
         }
     }
 
+    // Scrie starea curenta a broker-ului in fisier (apelat de RunAsync si la oprire)
     public async Task SaveAsync()
     {
         await _saveLock.WaitAsync();
         try
         {
-            // Dictionary din TopicManager -> lista de topicuri pentru XML
+            // a) Dictionary din TopicManager -> lista de topicuri pentru XML
             var backup = new BrokerBackup
             {
                 Topics = _topicManager.GetSnapshot()
@@ -107,12 +132,14 @@ public class PersistenceManager
                 DeadLetters = _deadLetters.GetAll()
             };
 
-            // scriem intai in .tmp, ca un crash in timpul scrierii sa nu strice backup-ul vechi
+            // b) scriem intai in .tmp, ca un crash in timpul scrierii sa nu strice backup-ul vechi
             string tempPath = _filePath + ".tmp";
             using (var stream = File.Create(tempPath))
             {
                 _serializer.Serialize(stream, backup);
             }
+
+            // c) abia acum inlocuim fisierul vechi cu cel nou
             File.Move(tempPath, _filePath, overwrite: true);
         }
         catch (Exception ex)
