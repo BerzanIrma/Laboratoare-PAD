@@ -1,25 +1,43 @@
-using System.Text.Json;
+using System.Xml.Serialization;
 
 namespace Broker;
 
-// Backup periodic al istoricului si al DLQ-ului intr-un fisier JSON + restaurare la pornire
+// Ce scriem in fisierul XML. Clasele trebuie sa fie public pentru XmlSerializer.
+[XmlRoot("BrokerBackup")]
+public class BrokerBackup
+{
+    [XmlArray("Topics")]
+    [XmlArrayItem("Topic")]
+    public List<TopicBackup> Topics { get; set; } = new();
+
+    [XmlArray("DeadLetters")]
+    [XmlArrayItem("DeadLetter")]
+    public List<DeadLetter> DeadLetters { get; set; } = new();
+}
+
+// Un topic cu istoricul lui (inlocuieste o intrare din Dictionary, pe care XmlSerializer nu o suporta)
+public class TopicBackup
+{
+    [XmlAttribute("name")]
+    public string Name { get; set; } = "";
+
+    [XmlArray("Messages")]
+    [XmlArrayItem("Message")]
+    public List<Message> Messages { get; set; } = new();
+}
+
+// Backup periodic al istoricului si al DLQ-ului intr-un fisier XML + restaurare la pornire
 public class PersistenceManager
 {
-    // ce scriem in fisier
-    private class BrokerBackup
-    {
-        public Dictionary<string, List<Message>> History { get; set; } = new();
-        public List<DeadLetter> DeadLetters { get; set; } = new();
-    }
-
     private readonly TopicManager _topicManager;
     private readonly DeadLetterQueue _deadLetters;
     private readonly string _filePath;
     private readonly TimeSpan _interval;
     private readonly SemaphoreSlim _saveLock = new(1, 1);
+    private readonly XmlSerializer _serializer = new(typeof(BrokerBackup));
 
     public PersistenceManager(TopicManager topicManager, DeadLetterQueue deadLetters,
-                              string filePath = "broker_backup.json", int intervalSeconds = 10)
+                              string filePath = "broker_backup.xml", int intervalSeconds = 10)
     {
         _topicManager = topicManager;
         _deadLetters = deadLetters;
@@ -38,16 +56,21 @@ public class PersistenceManager
 
         try
         {
-            string json = File.ReadAllText(_filePath);
-            var backup = JsonSerializer.Deserialize<BrokerBackup>(json);
+            BrokerBackup? backup;
+            using (var stream = File.OpenRead(_filePath))
+            {
+                backup = _serializer.Deserialize(stream) as BrokerBackup;
+            }
             if (backup == null)
                 return;
 
-            _topicManager.LoadSnapshot(backup.History);
+            // lista de topicuri din XML -> Dictionary pentru TopicManager
+            var history = backup.Topics.ToDictionary(t => t.Name, t => t.Messages);
+            _topicManager.LoadSnapshot(history);
             _deadLetters.Load(backup.DeadLetters);
 
-            Console.WriteLine($"Restaurat din backup: {backup.History.Sum(t => t.Value.Count)} mesaje " +
-                              $"pe {backup.History.Count} topicuri, {backup.DeadLetters.Count} mesaje in DLQ.");
+            Console.WriteLine($"Restaurat din backup: {history.Sum(t => t.Value.Count)} mesaje " +
+                              $"pe {history.Count} topicuri, {backup.DeadLetters.Count} mesaje in DLQ.");
         }
         catch (Exception ex)
         {
@@ -75,17 +98,21 @@ public class PersistenceManager
         await _saveLock.WaitAsync();
         try
         {
+            // Dictionary din TopicManager -> lista de topicuri pentru XML
             var backup = new BrokerBackup
             {
-                History = _topicManager.GetSnapshot(),
+                Topics = _topicManager.GetSnapshot()
+                    .Select(t => new TopicBackup { Name = t.Key, Messages = t.Value })
+                    .ToList(),
                 DeadLetters = _deadLetters.GetAll()
             };
 
-            string json = JsonSerializer.Serialize(backup, new JsonSerializerOptions { WriteIndented = true });
-
             // scriem intai in .tmp, ca un crash in timpul scrierii sa nu strice backup-ul vechi
             string tempPath = _filePath + ".tmp";
-            await File.WriteAllTextAsync(tempPath, json);
+            using (var stream = File.Create(tempPath))
+            {
+                _serializer.Serialize(stream, backup);
+            }
             File.Move(tempPath, _filePath, overwrite: true);
         }
         catch (Exception ex)
