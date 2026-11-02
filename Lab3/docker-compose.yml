@@ -37,7 +37,14 @@ services:
       - consul
     deploy:
       replicas: 3
-
+  gateway:
+    build: ./Gateway/Gateway
+    container_name: gateway
+    ports:
+      - "5000:8080"
+    depends_on:
+      - consul
+      
 volumes:
   mongo-a1-data:
   mongo-b1-data:

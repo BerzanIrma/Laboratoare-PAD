@@ -1,0 +1,29 @@
+{
+  "Routes": [
+    {
+      "UpstreamPathTemplate": "/hotels",
+      "UpstreamHttpMethod": [ "GET", "POST" ],
+      "DownstreamPathTemplate": "/hotels",
+      "DownstreamScheme": "http",
+      "ServiceName": "hotel-api",
+      "LoadBalancerOptions": { "Type": "RoundRobin" }
+    },
+    {
+      "UpstreamPathTemplate": "/hotels/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "DownstreamPathTemplate": "/hotels/{everything}",
+      "DownstreamScheme": "http",
+      "ServiceName": "hotel-api",
+      "LoadBalancerOptions": { "Type": "RoundRobin" }
+    }
+  ],
+  "GlobalConfiguration": {
+    "BaseUrl": "http://localhost:5000",
+    "ServiceDiscoveryProvider": {
+      "Scheme": "http",
+      "Host": "consul",
+      "Port": 8500,
+      "Type": "Consul"
+    }
+  }
+}
