@@ -6,7 +6,19 @@
       "DownstreamPathTemplate": "/hotels",
       "DownstreamScheme": "http",
       "ServiceName": "hotel-api",
-      "LoadBalancerOptions": { "Type": "RoundRobin" }
+      "LoadBalancerOptions": { "Type": "RoundRobin" },
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 3,
+        "DurationOfBreak": 10000,
+        "TimeoutValue": 3000
+      },
+      "RateLimitOptions": {
+        "EnableRateLimiting": true,
+        "ClientWhitelist": [],
+        "Period": "10s",
+        "PeriodTimespan": 10,
+        "Limit": 20
+      }
     },
     {
       "UpstreamPathTemplate": "/hotels/{everything}",
@@ -14,7 +26,19 @@
       "DownstreamPathTemplate": "/hotels/{everything}",
       "DownstreamScheme": "http",
       "ServiceName": "hotel-api",
-      "LoadBalancerOptions": { "Type": "RoundRobin" }
+      "LoadBalancerOptions": { "Type": "RoundRobin" },
+      "QoSOptions": {
+        "ExceptionsAllowedBeforeBreaking": 3,
+        "DurationOfBreak": 10000,
+        "TimeoutValue": 3000
+      },
+      "RateLimitOptions": {
+        "EnableRateLimiting": true,
+        "ClientWhitelist": [],
+        "Period": "10s",
+        "PeriodTimespan": 10,
+        "Limit": 20
+      }
     }
   ],
   "GlobalConfiguration": {
@@ -24,6 +48,11 @@
       "Host": "consul",
       "Port": 8500,
       "Type": "Consul"
+    },
+    "RateLimitOptions": {
+      "ClientIdHeader": "ClientId",
+      "QuotaExceededMessage": "Prea multe cereri. Incearca din nou peste cateva secunde.",
+      "HttpStatusCode": 429
     }
   }
 }
