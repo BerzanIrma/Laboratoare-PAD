@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sync
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sync
+  template:
+    metadata:
+      labels:
+        app: sync
+    spec:
+      containers:
+        - name: sync
+          image: sync:1.0
+          env:
+            - name: MONGO_A
+              value: "mongodb://mongo-a-0.mongo-a:27017,mongo-a-1.mongo-a:27017,mongo-a-2.mongo-a:27017/?replicaSet=rsA"
+            - name: MONGO_B
+              value: "mongodb://mongo-b-0.mongo-b:27017,mongo-b-1.mongo-b:27017,mongo-b-2.mongo-b:27017/?replicaSet=rsB"
