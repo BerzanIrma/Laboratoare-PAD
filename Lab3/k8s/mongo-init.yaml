@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongo-init
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init
+          image: mongo:8.0
+          command: ["bash", "-c"]
+          args:
+            - |
+              set -e
+              init_rs() {
+                svc=$1
+                rs=$2
+                for i in 0 1 2; do
+                  until mongosh --host $svc-$i.$svc --quiet --eval "db.adminCommand('ping')" > /dev/null 2>&1; do
+                    echo "Astept $svc-$i..."
+                    sleep 3
+                  done
+                done
+                mongosh --host $svc-0.$svc --quiet --eval "
+                  try { rs.status(); print('$rs era deja initializat'); }
+                  catch (e) {
+                    rs.initiate({_id:'$rs', members:[
+                      {_id:0, host:'$svc-0.$svc:27017'},
+                      {_id:1, host:'$svc-1.$svc:27017'},
+                      {_id:2, host:'$svc-2.$svc:27017'}]});
+                    print('$rs initializat');
+                  }"
+              }
+              init_rs mongo-a rsA
+              init_rs mongo-b rsB
+              
