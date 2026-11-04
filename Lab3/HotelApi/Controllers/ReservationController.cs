@@ -3,6 +3,7 @@ using HotelApi.Models;
 using HotelApi.Services;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
+using System.ComponentModel.DataAnnotations;
 
 namespace HotelApi.Controllers;
 
@@ -46,6 +47,10 @@ public class ReservationsController : ControllerBase
     public async Task<IActionResult> GetById(
         string hotelId, string id)
     {
+        if (!ObjectId.TryParse(hotelId, out _) ||
+            !ObjectId.TryParse(id, out _))
+            return BadRequest("Invalid ID.");
+
         var reservation = await _service.GetByIdAsync(
             hotelId, id);
 
@@ -66,17 +71,12 @@ public class ReservationsController : ControllerBase
         if (!ObjectId.TryParse(hotelId, out _))
             return BadRequest("Invalid HotelId.");
 
-        if (string.IsNullOrWhiteSpace(reservation.GuestName) ||
-            string.IsNullOrWhiteSpace(reservation.GuestEmail) ||
-            !new System.ComponentModel.DataAnnotations
-                .EmailAddressAttribute()
-                .IsValid(reservation.GuestEmail) ||
-            reservation.CheckOut <= reservation.CheckIn ||
-            reservation.Rooms < 1 ||
-            reservation.Rooms > 10)
-        {
+        if (!ModelState.IsValid ||
+            !IsValidReservation(reservation))
             return BadRequest("Invalid reservation data.");
-        }
+
+        if (!await _service.HotelExistsAsync(hotelId))
+            return NotFound("Hotel not found.");
 
         reservation.HotelId = hotelId;
 
@@ -100,19 +100,15 @@ public class ReservationsController : ControllerBase
         string id,
         Reservation reservation)
     {
-        if (string.IsNullOrWhiteSpace(reservation.GuestName) ||
-            string.IsNullOrWhiteSpace(reservation.GuestEmail) ||
-            !new System.ComponentModel.DataAnnotations
-                .EmailAddressAttribute()
-                .IsValid(reservation.GuestEmail) ||
-            reservation.CheckOut <= reservation.CheckIn ||
-            reservation.Rooms < 1 ||
-            reservation.Rooms > 10 ||
+        if (!ObjectId.TryParse(hotelId, out _) ||
+            !ObjectId.TryParse(id, out _))
+            return BadRequest("Invalid ID.");
+
+        if (!ModelState.IsValid ||
+            !IsValidReservation(reservation) ||
             (reservation.Status != "confirmed" &&
              reservation.Status != "cancelled"))
-        {
             return BadRequest("Invalid reservation data.");
-        }
 
         var updated = await _service.UpdateAsync(
             hotelId, id, reservation);
@@ -131,6 +127,10 @@ public class ReservationsController : ControllerBase
     public async Task<IActionResult> Delete(
         string hotelId, string id)
     {
+        if (!ObjectId.TryParse(hotelId, out _) ||
+            !ObjectId.TryParse(id, out _))
+            return BadRequest("Invalid ID.");
+
         var cancelled = await _service.CancelAsync(
             hotelId, id);
 
@@ -141,5 +141,15 @@ public class ReservationsController : ControllerBase
             _sharding.GetShard(hotelId);
 
         return NoContent();
+    }
+
+    private static bool IsValidReservation(Reservation reservation)
+    {
+        return !string.IsNullOrWhiteSpace(reservation.GuestName)
+            && !string.IsNullOrWhiteSpace(reservation.GuestEmail)
+            && new EmailAddressAttribute().IsValid(reservation.GuestEmail)
+            && reservation.CheckOut > reservation.CheckIn
+            && reservation.Rooms >= 1
+            && reservation.Rooms <= 10;
     }
 }

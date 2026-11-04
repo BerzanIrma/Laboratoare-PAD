@@ -30,6 +30,23 @@ public class ReservationService
             : _context.ReservationsB;
     }
 
+    // Verifică dacă hotelul există în clusterul corespunzător
+    public async Task<bool> HotelExistsAsync(string hotelId)
+    {
+        if (!ObjectId.TryParse(hotelId, out _))
+            return false;
+
+        string shard = _sharding.GetShard(hotelId);
+
+        var hotels = shard == "A"
+            ? _context.HotelsA
+            : _context.HotelsB;
+
+        return await hotels
+            .Find(h => h.Id == hotelId)
+            .AnyAsync();
+    }
+
     // GET: Toate rezervările unui hotel
     public async Task<List<Reservation>> GetAllAsync(
         string hotelId,

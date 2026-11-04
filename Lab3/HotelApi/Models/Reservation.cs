@@ -1,6 +1,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using System.ComponentModel.DataAnnotations;
 
 namespace HotelApi.Models;
 
@@ -12,12 +13,16 @@ public class Reservation
 
     [BsonElement("HotelId")]
     [BsonRepresentation(BsonType.ObjectId)]
+    [Required]
     public string HotelId { get; set; } = string.Empty;
 
     [BsonElement("GuestName")]
+    [Required]
     public string GuestName { get; set; } = string.Empty;
 
     [BsonElement("GuestEmail")]
+    [Required]
+    [EmailAddress]
     public string GuestEmail { get; set; } = string.Empty;
 
     [BsonElement("CheckIn")]
@@ -27,9 +32,11 @@ public class Reservation
     public DateTime CheckOut { get; set; }
 
     [BsonElement("Rooms")]
+    [Range(1, 10)]
     public int Rooms { get; set; }
 
     [BsonElement("Status")]
+    [RegularExpression("^(confirmed|cancelled)$")]
     public string Status { get; set; } = "confirmed";
 
     [BsonElement("CreatedAt")]
