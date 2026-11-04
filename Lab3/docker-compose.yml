@@ -28,13 +28,41 @@ services:
     ports:
       - "8500:8500"
 
+  api-a:
+    build: ./HotelApi
+    environment:
+      - API_GROUP=A
+      - INSTANCE_NAME=api-a
+      - MONGO_A=mongodb://mongo-a1:27017
+      - MONGO_B=mongodb://mongo-b1:27017
+      - REDIS=redis:6379
+      - CONSUL=http://consul:8500
+    depends_on:
+      - mongo-a1
+      - mongo-b1
+      - redis
+      - consul
 
+  api-b:
+    build: ./HotelApi
+    environment:
+      - API_GROUP=B
+      - INSTANCE_NAME=api-b
+      - MONGO_A=mongodb://mongo-a1:27017
+      - MONGO_B=mongodb://mongo-b1:27017
+      - REDIS=redis:6379
+      - CONSUL=http://consul:8500
+    depends_on:
+      - mongo-a1
+      - mongo-b1
+      - redis
+      - consul
 
   gateway:
     build: ./Gateway/Gateway
     container_name: gateway
     ports:
-      - "5000:8080"
+      - "5001:8080"
     depends_on:
       - consul
 
