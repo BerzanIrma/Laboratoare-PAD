@@ -1,0 +1,144 @@
+
+{
+  "info": {
+    "name": "HotelSystem",
+    "description": "Hotel and reservation CRUD tests through Gateway",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "hotelId",
+      "value": "000000000000000000000001"
+    },
+    {
+      "key": "reservationId",
+      "value": "0000000000000000000003e9"
+    }
+  ],
+  "item": [
+    {
+      "name": "Hotels",
+      "item": [
+        {
+          "name": "GET - All Hotels",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/hotels?offset=0&limit=10"
+          }
+        },
+        {
+          "name": "GET - Hotel By ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/hotels/{{hotelId}}"
+          }
+        },
+        {
+          "name": "POST - Create Hotel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hotel Test\",\n  \"city\": \"Chisinau\",\n  \"address\": \"Stefan cel Mare 10\",\n  \"stars\": 4,\n  \"totalRooms\": 100,\n  \"pricePerNight\": 85.50\n}"
+            },
+            "url": "{{baseUrl}}/hotels"
+          }
+        },
+        {
+          "name": "PUT - Update Hotel",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hotel Updated\",\n  \"city\": \"Chisinau\",\n  \"address\": \"Stefan cel Mare 20\",\n  \"stars\": 5,\n  \"totalRooms\": 120,\n  \"pricePerNight\": 100\n}"
+            },
+            "url": "{{baseUrl}}/hotels/{{hotelId}}"
+          }
+        },
+        {
+          "name": "DELETE - Hotel",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/hotels/{{hotelId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reservations",
+      "item": [
+        {
+          "name": "GET - Hotel Reservations",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/hotels/{{hotelId}}/reservations?offset=0&limit=10"
+          }
+        },
+        {
+          "name": "GET - Reservation By ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/hotels/{{hotelId}}/reservations/{{reservationId}}"
+          }
+        },
+        {
+          "name": "POST - Create Reservation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"guestName\": \"Ion Popescu\",\n  \"guestEmail\": \"ion@mail.md\",\n  \"checkIn\": \"2026-12-20\",\n  \"checkOut\": \"2026-12-23\",\n  \"rooms\": 2,\n  \"status\": \"confirmed\"\n}"
+            },
+            "url": "{{baseUrl}}/hotels/{{hotelId}}/reservations"
+          }
+        },
+        {
+          "name": "PUT - Update Reservation",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"guestName\": \"Ion Popescu Updated\",\n  \"guestEmail\": \"ion@mail.md\",\n  \"checkIn\": \"2026-12-20\",\n  \"checkOut\": \"2026-12-24\",\n  \"rooms\": 1,\n  \"status\": \"confirmed\"\n}"
+            },
+            "url": "{{baseUrl}}/hotels/{{hotelId}}/reservations/{{reservationId}}"
+          }
+        },
+        {
+          "name": "DELETE - Cancel Reservation",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/hotels/{{hotelId}}/reservations/{{reservationId}}"
+          }
+        }
+      ]
+    }
+  ]
+}
