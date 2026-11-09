@@ -1,0 +1,4 @@
+D:\Lab3\Seeder\obj\Debug\net9.0\Seeder.GeneratedMSBuildEditorConfig.editorconfig
+D:\Lab3\Seeder\obj\Debug\net9.0\Seeder.AssemblyInfoInputs.cache
+D:\Lab3\Seeder\obj\Debug\net9.0\Seeder.AssemblyInfo.cs
+D:\Lab3\Seeder\obj\Debug\net9.0\Seeder.csproj.CoreCompileInputs.cache
