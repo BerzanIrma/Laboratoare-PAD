@@ -1,35 +1,26 @@
+// Initializeaza replica set-urile rsA si rsB.
+// Il ruleaza o singura data serviciul mongo-init din docker-compose.
 
-const hello = db.adminCommand({ hello: 1 });
-const currentNode = hello.me;
+function initReplicaSet(rsName, prefix) {
+    const admin = connect(prefix + "1:27017/admin");
 
-let config;
-
-if (currentNode.startsWith("mongo-a1")) {
-    config = {
-        _id: "rsA",
+    const config = {
+        _id: rsName,
         members: [
-            { _id: 0, host: "mongo-a1:27017" },
-            { _id: 1, host: "mongo-a2:27017" },
-            { _id: 2, host: "mongo-a3:27017" }
+            { _id: 0, host: prefix + "1:27017", priority: 2 },  // nodul 1 preferat ca primary
+            { _id: 1, host: prefix + "2:27017", priority: 1 },
+            { _id: 2, host: prefix + "3:27017", priority: 1 }
         ]
     };
-} else if (currentNode.startsWith("mongo-b1")) {
-    config = {
-        _id: "rsB",
-        members: [
-            { _id: 0, host: "mongo-b1:27017" },
-            { _id: 1, host: "mongo-b2:27017" },
-            { _id: 2, host: "mongo-b3:27017" }
-        ]
-    };
-} else {
-    throw new Error("Run this script on mongo-a1 or mongo-b1");
+
+    try {
+        admin.adminCommand({ replSetGetStatus: 1 });
+        print(rsName + " era deja initializat");
+    } catch (e) {
+        admin.adminCommand({ replSetInitiate: config });
+        print(rsName + " initializat");
+    }
 }
 
-try {
-    rs.status();
-    print("Replica set already initialized: " + config._id);
-} catch (error) {
-    rs.initiate(config);
-    print("Replica set initialized: " + config._id);
-}
+initReplicaSet("rsA", "mongo-a");
+initReplicaSet("rsB", "mongo-b");

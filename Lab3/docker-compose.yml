@@ -1,19 +1,75 @@
+# setari comune pentru toate cele 6 noduri MongoDB
+x-mongo-node: &mongo-node
+  image: mongo:8.0
+  healthcheck:
+    test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+    interval: 5s
+    timeout: 5s
+    retries: 10
+
 services:
+  # ---------- MongoDB A: replica set rsA (3 noduri) ----------
   mongo-a1:
-    image: mongo:8.0
+    <<: *mongo-node
     container_name: mongo-a1
+    command: ["mongod", "--replSet", "rsA", "--bind_ip_all"]
     ports:
       - "27017:27017"
     volumes:
       - mongo-a1-data:/data/db
 
+  mongo-a2:
+    <<: *mongo-node
+    container_name: mongo-a2
+    command: ["mongod", "--replSet", "rsA", "--bind_ip_all"]
+    volumes:
+      - mongo-a2-data:/data/db
+
+  mongo-a3:
+    <<: *mongo-node
+    container_name: mongo-a3
+    command: ["mongod", "--replSet", "rsA", "--bind_ip_all"]
+    volumes:
+      - mongo-a3-data:/data/db
+
+  # ---------- MongoDB B: replica set rsB (3 noduri) ----------
   mongo-b1:
-    image: mongo:8.0
+    <<: *mongo-node
     container_name: mongo-b1
+    command: ["mongod", "--replSet", "rsB", "--bind_ip_all"]
     ports:
       - "27018:27017"
     volumes:
       - mongo-b1-data:/data/db
+
+  mongo-b2:
+    <<: *mongo-node
+    container_name: mongo-b2
+    command: ["mongod", "--replSet", "rsB", "--bind_ip_all"]
+    volumes:
+      - mongo-b2-data:/data/db
+
+  mongo-b3:
+    <<: *mongo-node
+    container_name: mongo-b3
+    command: ["mongod", "--replSet", "rsB", "--bind_ip_all"]
+    volumes:
+      - mongo-b3-data:/data/db
+
+  # ruleaza o data, initializeaza rsA si rsB, apoi se opreste
+  mongo-init:
+    image: mongo:8.0
+    container_name: mongo-init
+    volumes:
+      - ./mongo:/scripts
+    command: ["mongosh", "--nodb", "--quiet", "/scripts/init-replicas.js"]
+    depends_on:
+      mongo-a1: { condition: service_healthy }
+      mongo-a2: { condition: service_healthy }
+      mongo-a3: { condition: service_healthy }
+      mongo-b1: { condition: service_healthy }
+      mongo-b2: { condition: service_healthy }
+      mongo-b3: { condition: service_healthy }
 
   redis:
     image: redis:7.4
@@ -32,31 +88,40 @@ services:
     build: ./HotelApi
     environment:
       - API_GROUP=A
-      - INSTANCE_NAME=api-a
-      - MONGO_A=mongodb://mongo-a1:27017
-      - MONGO_B=mongodb://mongo-b1:27017
+      - MONGO_A=mongodb://mongo-a1:27017,mongo-a2:27017,mongo-a3:27017/?replicaSet=rsA
+      - MONGO_B=mongodb://mongo-b1:27017,mongo-b2:27017,mongo-b3:27017/?replicaSet=rsB
       - REDIS=redis:6379
       - CONSUL=http://consul:8500
     depends_on:
-      - mongo-a1
-      - mongo-b1
-      - redis
-      - consul
+      mongo-init: { condition: service_completed_successfully }
+      redis: { condition: service_started }
+      consul: { condition: service_started }
+    deploy:
+      replicas: 2
 
   api-b:
     build: ./HotelApi
     environment:
       - API_GROUP=B
-      - INSTANCE_NAME=api-b
-      - MONGO_A=mongodb://mongo-a1:27017
-      - MONGO_B=mongodb://mongo-b1:27017
+      - MONGO_A=mongodb://mongo-a1:27017,mongo-a2:27017,mongo-a3:27017/?replicaSet=rsA
+      - MONGO_B=mongodb://mongo-b1:27017,mongo-b2:27017,mongo-b3:27017/?replicaSet=rsB
       - REDIS=redis:6379
       - CONSUL=http://consul:8500
     depends_on:
-      - mongo-a1
-      - mongo-b1
-      - redis
-      - consul
+      mongo-init: { condition: service_completed_successfully }
+      redis: { condition: service_started }
+      consul: { condition: service_started }
+    deploy:
+      replicas: 2
+
+  sync:
+    build: ./SyncService/SyncService
+    container_name: sync
+    environment:
+      - MONGO_A=mongodb://mongo-a1:27017,mongo-a2:27017,mongo-a3:27017/?replicaSet=rsA
+      - MONGO_B=mongodb://mongo-b1:27017,mongo-b2:27017,mongo-b3:27017/?replicaSet=rsB
+    depends_on:
+      mongo-init: { condition: service_completed_successfully }
 
   gateway:
     build: ./Gateway/Gateway
@@ -68,4 +133,8 @@ services:
 
 volumes:
   mongo-a1-data:
+  mongo-a2-data:
+  mongo-a3-data:
   mongo-b1-data:
+  mongo-b2-data:
+  mongo-b3-data:
