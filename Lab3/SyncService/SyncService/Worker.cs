@@ -1,4 +1,3 @@
-
 using Microsoft.Extensions.Hosting;
 using SyncService.Services;
 
@@ -9,36 +8,34 @@ public class Worker : BackgroundService
     private readonly MongoSyncService _syncService;
     private readonly ILogger<Worker> _logger;
 
-    public Worker(
-        MongoSyncService syncService,
-        ILogger<Worker> logger)
+    public Worker(MongoSyncService syncService, ILogger<Worker> logger)
     {
         _syncService = syncService;
         _logger = logger;
     }
 
-    protected override async Task ExecuteAsync(
-        CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation(
-            "MongoDB SyncService started.");
+        _logger.LogInformation("MongoDB SyncService started.");
 
-        try
+        // daca sincronizarea da eroare (ex: Mongo nu e pornit), reincercam la 5 secunde
+        while (!stoppingToken.IsCancellationRequested)
         {
-            await _syncService.RunAsync(stoppingToken);
+            try
+            {
+                await _syncService.RunAsync(stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Sincronizarea s-a oprit: {Msg}. Reincerc in 5 secunde...", ex.Message);
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+            }
         }
-        catch (OperationCanceledException)
-            when (stoppingToken.IsCancellationRequested)
-        {
-            _logger.LogInformation(
-                "SyncService stopped.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(
-                ex, "Synchronization failed.");
 
-            throw;
-        }
+        _logger.LogInformation("SyncService stopped.");
     }
 }
