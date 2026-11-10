@@ -3,11 +3,12 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using Seeder.Models;
 
+// implicit: bazele din docker-compose, accesate de pe calculator
 string connectionA = Environment.GetEnvironmentVariable("MONGO_A")
-    ?? throw new Exception("MONGO_A is not configured");
+    ?? "mongodb://localhost:27017/?directConnection=true";
 
 string connectionB = Environment.GetEnvironmentVariable("MONGO_B")
-    ?? throw new Exception("MONGO_B is not configured");
+    ?? "mongodb://localhost:27018/?directConnection=true";
 
 var clientA = new MongoClient(connectionA);
 var clientB = new MongoClient(connectionB);
