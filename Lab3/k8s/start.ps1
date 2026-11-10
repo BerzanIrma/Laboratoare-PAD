@@ -3,12 +3,12 @@
 # Oprire si stergere totala: kubectl delete namespace pad-lab3
 
 $hasApi  = Test-Path ./HotelApi/Dockerfile
-$hasSync = Test-Path ./SyncService/Dockerfile
+$hasSync = Test-Path ./SyncService/SyncService/Dockerfile
 
 Write-Host "`n1. Construiesc imaginile..." -ForegroundColor Cyan
 docker build -t gateway:1.0 ./Gateway/Gateway
 if ($hasApi)  { docker build -t hotel-api:1.0 ./HotelApi }
-if ($hasSync) { docker build -t sync:1.0 ./SyncService }
+if ($hasSync) { docker build -t sync:1.0 ./SyncService/SyncService }
 
 Write-Host "`n2. Namespace pad-lab3..." -ForegroundColor Cyan
 kubectl create namespace pad-lab3 --dry-run=client -o yaml | kubectl apply -f -
@@ -26,4 +26,4 @@ if ($hasSync) { kubectl apply -f k8s/sync.yaml } else { Write-Host "SyncService 
 
 Write-Host "`n5. Stare:" -ForegroundColor Cyan
 kubectl get pods
-Write-Host "`nGateway: http://localhost:5000   Consul: http://localhost:8500" -ForegroundColor Green
+Write-Host "`nGateway: http://localhost:5001   Consul: http://localhost:8500" -ForegroundColor Green
