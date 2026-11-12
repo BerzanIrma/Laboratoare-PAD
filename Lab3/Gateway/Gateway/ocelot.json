@@ -7,6 +7,7 @@
       "DownstreamScheme": "http",
       "ServiceName": "hotel-api",
       "LoadBalancerOptions": { "Type": "RoundRobin" },
+      "DownstreamHeaderTransform": { "Location": "{DownstreamBaseUrl}, {BaseUrl}" },
       "QoSOptions": {
         "ExceptionsAllowedBeforeBreaking": 3,
         "DurationOfBreak": 10000,
@@ -14,7 +15,7 @@
       },
       "RateLimitOptions": {
         "EnableRateLimiting": true,
-        "ClientWhitelist": [],
+        "ClientWhitelist": [ "premium" ],
         "Period": "10s",
         "PeriodTimespan": 10,
         "Limit": 20
@@ -27,6 +28,7 @@
       "DownstreamScheme": "http",
       "ServiceName": "hotel-api",
       "LoadBalancerOptions": { "Type": "RoundRobin" },
+      "DownstreamHeaderTransform": { "Location": "{DownstreamBaseUrl}, {BaseUrl}" },
       "QoSOptions": {
         "ExceptionsAllowedBeforeBreaking": 3,
         "DurationOfBreak": 10000,
@@ -34,7 +36,7 @@
       },
       "RateLimitOptions": {
         "EnableRateLimiting": true,
-        "ClientWhitelist": [],
+        "ClientWhitelist": [ "premium" ],
         "Period": "10s",
         "PeriodTimespan": 10,
         "Limit": 20
@@ -42,7 +44,7 @@
     }
   ],
   "GlobalConfiguration": {
-    "BaseUrl": "http://localhost:5000",
+    "BaseUrl": "http://localhost:5001",
     "ServiceDiscoveryProvider": {
       "Scheme": "http",
       "Host": "consul",

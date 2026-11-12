@@ -47,8 +47,8 @@ public class HotelService
         int limit = 10,
         string? city = null)
     {
-        string cacheKey =
-            $"hotels:{_group}:{offset}:{limit}:{city ?? "all"}";
+        // Cache comun pentru toate instanțele (A și B)
+        string cacheKey = $"hotels:{offset}:{limit}:{city ?? "all"}";
 
         var cachedHotels =
             await _cache.GetAsync<List<Hotel>>(cacheKey);
@@ -84,7 +84,8 @@ public class HotelService
             return (null, "database");
         }
 
-        string cacheKey = $"hotel:{_group}:{id}";
+        // Cache comun pentru toate instanțele (A și B)
+        string cacheKey = $"hotel:{id}";
 
         var cachedHotel =
             await _cache.GetAsync<Hotel>(cacheKey);
@@ -182,13 +183,11 @@ public class HotelService
         // Șterge cache-ul hotelului individual
         if (!string.IsNullOrWhiteSpace(hotelId))
         {
-            await _cache.RemoveAsync(
-                $"hotel:{_group}:{hotelId}");
+            await _cache.RemoveAsync($"hotel:{hotelId}");
         }
 
-        // Șterge toate listele de hoteluri din grupul curent
-        await _cache.RemoveByPatternAsync(
-            $"hotels:{_group}:*");
+        // Șterge toate listele de hoteluri din cache (comun pentru toate instanțele)
+        await _cache.RemoveByPatternAsync("hotels:*");
     }
 
     // Generează un hash stabil pentru numele containerului.

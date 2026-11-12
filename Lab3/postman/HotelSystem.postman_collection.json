@@ -1,141 +1,348 @@
-
 {
   "info": {
     "name": "HotelSystem",
-    "description": "Hotel and reservation CRUD tests through Gateway",
+    "description": "CRUD complet pentru hoteluri si rezervari, prin Gateway. Ruleaza cu Run collection, Delay 500 ms (timp pentru SyncService). Creeaza propriile date si le sterge la final, deci poate fi rulata de oricate ori.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:5001"
-    },
-    {
-      "key": "hotelId",
-      "value": "000000000000000000000001"
-    },
-    {
-      "key": "reservationId",
-      "value": "0000000000000000000003e9"
-    }
+    { "key": "baseUrl", "value": "http://localhost:5001" },
+    { "key": "hotelId", "value": "" },
+    { "key": "reservationId", "value": "" }
   ],
   "item": [
     {
-      "name": "Hotels",
+      "name": "1. Hoteluri",
       "item": [
         {
+          "name": "POST - Create Hotel",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Raspuns de la o instanta API (X-Instance)\", () => pm.response.to.have.header(\"X-Instance\"));",
+                  "const hotel = pm.response.json();",
+                  "pm.test(\"Hotelul are id\", () => pm.expect(hotel.id).to.be.a(\"string\"));",
+                  "pm.collectionVariables.set(\"hotelId\", hotel.id);",
+                  "console.log(\"Hotel creat:\", hotel.id, \"de\", pm.response.headers.get(\"X-Instance\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/hotels",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hotel Postman\",\n  \"city\": \"Chisinau\",\n  \"address\": \"Stefan cel Mare 10\",\n  \"stars\": 4,\n  \"totalRooms\": 100,\n  \"pricePerNight\": 85.5\n}"
+            }
+          }
+        },
+        {
           "name": "GET - All Hotels",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Raspunsul e o lista\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));",
+                  "pm.test(\"Are X-Data-Source\", () => pm.response.to.have.header(\"X-Data-Source\"));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
+            "header": [],
             "url": "{{baseUrl}}/hotels?offset=0&limit=10"
           }
         },
         {
           "name": "GET - Hotel By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"E hotelul creat\", () => pm.expect(pm.response.json().name).to.eql(\"Hotel Postman\"));",
+                  "console.log(\"Sursa:\", pm.response.headers.get(\"X-Data-Source\"));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
+            "header": [],
             "url": "{{baseUrl}}/hotels/{{hotelId}}"
           }
         },
         {
-          "name": "POST - Create Hotel",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+          "name": "GET - Hotel By ID (din cache)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"A doua citire vine din cache Redis\", () => pm.expect(pm.response.headers.get(\"X-Data-Source\")).to.eql(\"cache\"));"
+                ]
               }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Hotel Test\",\n  \"city\": \"Chisinau\",\n  \"address\": \"Stefan cel Mare 10\",\n  \"stars\": 4,\n  \"totalRooms\": 100,\n  \"pricePerNight\": 85.50\n}"
-            },
-            "url": "{{baseUrl}}/hotels"
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/hotels/{{hotelId}}"
           }
         },
         {
           "name": "PUT - Update Hotel",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"204 No Content\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/hotels/{{hotelId}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Hotel Updated\",\n  \"city\": \"Chisinau\",\n  \"address\": \"Stefan cel Mare 20\",\n  \"stars\": 5,\n  \"totalRooms\": 120,\n  \"pricePerNight\": 100\n}"
-            },
+              "raw": "{\n  \"name\": \"Hotel Postman Updated\",\n  \"city\": \"Chisinau\",\n  \"address\": \"Stefan cel Mare 20\",\n  \"stars\": 5,\n  \"totalRooms\": 120,\n  \"pricePerNight\": 100\n}"
+            }
+          }
+        },
+        {
+          "name": "GET - Hotel dupa PUT (cache invalidat)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Datele sunt cele noi\", () => pm.expect(pm.response.json().name).to.eql(\"Hotel Postman Updated\"));",
+                  "pm.test(\"Cache-ul a fost invalidat, se citeste din baza\", () => pm.expect(pm.response.headers.get(\"X-Data-Source\")).to.eql(\"database\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
             "url": "{{baseUrl}}/hotels/{{hotelId}}"
           }
         },
         {
-          "name": "DELETE - Hotel",
+          "name": "GET - Hotel in XML",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Raspunsul e XML\", () => pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"xml\"));",
+                  "pm.test(\"Contine <Hotel>\", () => pm.expect(pm.response.text()).to.include(\"<Hotel\"));"
+                ]
+              }
+            }
+          ],
           "request": {
-            "method": "DELETE",
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/xml" }],
             "url": "{{baseUrl}}/hotels/{{hotelId}}"
           }
         }
       ]
     },
     {
-      "name": "Reservations",
+      "name": "2. Rezervari",
       "item": [
         {
+          "name": "POST - Create Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Are X-Shard (A sau B)\", () => pm.expect(pm.response.headers.get(\"X-Shard\")).to.be.oneOf([\"A\",\"B\"]));",
+                  "const r = pm.response.json();",
+                  "pm.collectionVariables.set(\"reservationId\", r.id);",
+                  "console.log(\"Rezervare\", r.id, \"in shard\", pm.response.headers.get(\"X-Shard\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/hotels/{{hotelId}}/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hotelId\": \"{{hotelId}}\",\n  \"guestName\": \"Ion Popescu\",\n  \"guestEmail\": \"ion@mail.md\",\n  \"checkIn\": \"2026-12-20\",\n  \"checkOut\": \"2026-12-23\",\n  \"rooms\": 2,\n  \"status\": \"confirmed\"\n}"
+            }
+          }
+        },
+        {
           "name": "GET - Hotel Reservations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Contine rezervarea creata\", () => pm.expect(pm.response.json().length).to.be.at.least(1));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
+            "header": [],
             "url": "{{baseUrl}}/hotels/{{hotelId}}/reservations?offset=0&limit=10"
           }
         },
         {
           "name": "GET - Reservation By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"E rezervarea creata\", () => pm.expect(pm.response.json().guestName).to.eql(\"Ion Popescu\"));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
+            "header": [],
             "url": "{{baseUrl}}/hotels/{{hotelId}}/reservations/{{reservationId}}"
-          }
-        },
-        {
-          "name": "POST - Create Reservation",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"guestName\": \"Ion Popescu\",\n  \"guestEmail\": \"ion@mail.md\",\n  \"checkIn\": \"2026-12-20\",\n  \"checkOut\": \"2026-12-23\",\n  \"rooms\": 2,\n  \"status\": \"confirmed\"\n}"
-            },
-            "url": "{{baseUrl}}/hotels/{{hotelId}}/reservations"
           }
         },
         {
           "name": "PUT - Update Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"204 No Content\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/hotels/{{hotelId}}/reservations/{{reservationId}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"guestName\": \"Ion Popescu Updated\",\n  \"guestEmail\": \"ion@mail.md\",\n  \"checkIn\": \"2026-12-20\",\n  \"checkOut\": \"2026-12-24\",\n  \"rooms\": 1,\n  \"status\": \"confirmed\"\n}"
-            },
-            "url": "{{baseUrl}}/hotels/{{hotelId}}/reservations/{{reservationId}}"
+              "raw": "{\n  \"hotelId\": \"{{hotelId}}\",\n  \"guestName\": \"Ion Popescu Updated\",\n  \"guestEmail\": \"ion@mail.md\",\n  \"checkIn\": \"2026-12-20\",\n  \"checkOut\": \"2026-12-24\",\n  \"rooms\": 1,\n  \"status\": \"confirmed\"\n}"
+            }
           }
         },
         {
           "name": "DELETE - Cancel Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"204 No Content\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "DELETE",
+            "header": [],
             "url": "{{baseUrl}}/hotels/{{hotelId}}/reservations/{{reservationId}}"
+          }
+        },
+        {
+          "name": "GET - Reservation dupa anulare",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Status = cancelled (stergere logica)\", () => pm.expect(pm.response.json().status).to.eql(\"cancelled\"));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/hotels/{{hotelId}}/reservations/{{reservationId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Curatenie",
+      "item": [
+        {
+          "name": "DELETE - Hotel",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"204 No Content\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/hotels/{{hotelId}}"
+          }
+        },
+        {
+          "name": "GET - Hotel sters",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"404 Not Found\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/hotels/{{hotelId}}"
           }
         }
       ]
